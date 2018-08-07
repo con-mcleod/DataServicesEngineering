@@ -1,0 +1,6 @@
+# exclude lectures
+Lectures/
+
+# exclude other files
+CourseOutline.pdf
+pandas cheatsheet.pdf
