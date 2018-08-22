@@ -7,44 +7,24 @@ zID: z5058240
 Note to assessor:
 Some key things to look out for:
 	- I have removed the "totals" row from the dataframe 
+	- I have renamed each team by removing all bracketed strings and all
+	 leading/trailing white space
 	- I have renamed all of the column headings
 	- Removing the 'Rubish' column was a permanent change
 	- Removing rows containing a NaN value was a permanent change
 	- My matplotlib errors on my OS without the additional line below the import 
-		- please remove this line if it bugs out your machine (line 20)
+		- please remove this line if it bugs out your machine (line 19)
 """
 
 import pandas as pd
-
 import matplotlib as mpl
-mpl.use('TkAgg')							# may need to remove this line
+mpl.use('TkAgg')					# may need to remove this line
 import matplotlib.pyplot as plt
 
 
 
 
 
-def merge_dfs(df1, df2, join_type, df1_key, df2_key):
-	"""
-	Merge two dataframes given specific constraints
-	:param df1: the first dataframe
-	:param df2: the second dataframe
-	:param join_type: 'left', 'right', 'outer' or 'inner' type of join
-	:param df1_key: the key of df1 to join on
-	:param df2:key: the key of df2 to join on
-	"""
-	merged_df = pd.merge(df1, df2, how=join_type, left_on=[df1_key], right_on=[df2_key])
-	return merged_df
-
-def read_csv(csv_file):
-	"""
-	Read in the provided csv file to a Pandas dataframe
-	:param csv_file: the file to be read into a dataframe
-	:return: the Pandas dataframe
-	"""
-	df = pd.read_csv(csv_file, skiprows=1)
-
-	return df
 
 def print_df(dataframe, print_cols, print_rows, numRows):
 	"""
@@ -67,22 +47,18 @@ def print_df(dataframe, print_cols, print_rows, numRows):
 				else:
 					break
 				numRows -= 1
-				
+			
 
-def drop_columns(dataframe, columns_to_drop):
+def convert_to_int(df, columns_to_convert):
 	"""
-	:param dataframe: the dataframe to drop columns from
-	:param columns_to_drop: the columns to be removed from the dataframe
-	:return: the updated dataframe
+	Function to convert specified columns from object datatype to int64 datatype
+	:param df: the dataframe to be modified
+	:param columns_to_convert: list of columns to be modified
+	:return df: the modified dataframe
 	"""
-	df = dataframe.drop(columns=columns_to_drop)
+	for column in columns_to_convert:
+		df[column] = [int(val.replace(',','')) for val in df[column]]
 	return df
-
-
-
-
-
-
 
 
 def question_1(df1, df2):
@@ -92,9 +68,11 @@ def question_1(df1, df2):
 	:param df2: the second dataframe
 	:return merged_df: the merged dataframe
 	"""
-	merged_df = merge_dfs(df1, df2, 'left','Team','Team')
+	merged_df = pd.merge(df1, df2, how='left', left_on='Team', right_on='Team')
 	# remove the total row
 	merged_df = merged_df[:-1]
+	# remove unnecessary characters from Team
+	merged_df['Team'] = [val.split('(')[0].lstrip().strip() for val in merged_df['Team']]
 	print_df(merged_df,True,True,5)
 	return merged_df
 
@@ -115,7 +93,7 @@ def question_3(df):
 	:return df: the udpated dataframe
 	"""
 	columns_to_drop = "Rubbish"
-	df = drop_columns(df, columns_to_drop)
+	df = df.drop(columns=columns_to_drop)
 	print_df(df,True,True,5)
 	return df
 
@@ -127,7 +105,6 @@ def question_4(df):
 	:return df: the updated dataframe
 	"""
 	df = df.dropna()
-	# temporary dataframe containing the 10 last rows
 	df_4 = df.tail(10)
 	print_df(df_4,True,True,False)
 	return df
@@ -135,18 +112,18 @@ def question_4(df):
 
 def question_5(df):
 	"""
+	Prints the row which has the team with the highest number of Summer gold medals
+	:param df: the dataframe
 	"""
-	# remove commas from summer gold medal tally and convert to integers
-	df['S_Gold'] = [int(val.replace(',','')) for val in df['S_Gold']]
 	df = df.sort_values('S_Gold', ascending=False)
 	print_df(df,True,True,1)
 
 
 def question_6(df):
 	"""
+	Prints the row with Team having highest difference in Summer and Winter gold medals
+	:param df: the dataframe
 	"""
-	# remove commas from winter gold medal tally and convert to integers
-	df['W_Gold'] = [int(val.replace(',','')) for val in df['W_Gold']]
 	df['Gold_Difference'] = abs(df['S_Gold'] - df['W_Gold'])
 	df = df.sort_values('Gold_Difference', ascending=False)
 	print_df(df,True,True,1)
@@ -154,9 +131,10 @@ def question_6(df):
 
 def question_7(df):
 	"""
+	Prints 10 Team's which have the highest and lowest combined total medals
+	:param df: the dataframe
+	:return df: returns the reordered dataframe
 	"""
-	# remove commas from combined gold medal tally and convert to integers
-	df['C_Total'] = [int(val.replace(',','')) for val in df['C_Total']]
 	df = df.sort_values('C_Total', ascending=False)
 	print_df(df,True,True,5)
 	df_7 = df.tail(5)
@@ -166,13 +144,11 @@ def question_7(df):
 
 def question_8(df):
 	"""
+	Plots the Summer/Winter medal split for 10 highest medal winners
+	:param df: the dataframe
 	"""
-	df['Team'] = [val.split('(')[0].lstrip().strip() for val in df['Team']]
 	df_8 = df.set_index('Team')
-	df_8['W_Total'] = [int(val.replace(',','')) for val in df['W_Total']]
-	df_8['S_Total'] = [int(val.replace(',','')) for val in df['S_Total']]
 	df_8 = df_8.head(10)
-
 
 	df_8[['W_Total','S_Total']].plot(kind='barh', stacked=True)
 	plt.xlabel('Total Medal Tally')
@@ -184,18 +160,18 @@ def question_8(df):
 
 def question_9(df):
 	"""
+	Plots 5 Teams' Winter gold/silver/bronze splits
+	:param df: the dataframe
 	"""
-	df['Team'] = [val.split('(')[0].lstrip().strip() for val in df['Team']]
+	
 	df_9 = df
-	df_9['W_Silver'] = [int(val.replace(',','')) for val in df['W_Silver']]
-	df_9['W_Bronze'] = [int(val.replace(',','')) for val in df['W_Bronze']]
 	df_9 = df_9.loc[df_9['Team'].isin(['United States','Australia','Great Britain','Japan','New Zealand'])]
 	df_9 = df_9.set_index('Team')
 
 	df_9[['W_Gold','W_Silver','W_Bronze']].plot(kind='bar')
 	plt.xlabel('Country')
 	plt.ylabel('Medal Tally')
-	plt.title('Gold/Silver/Bronze Split for 5 Countries')
+	plt.title('Winter Gold/Silver/Bronze Split for 5 Countries')
 	plt.tight_layout()
 	plt.show()
 	plt.show()
@@ -210,49 +186,100 @@ if __name__ == '__main__':
 	csv2 = "Olympics_dataset2.csv"
 
 	# read in the csv files
-	df1 = read_csv(csv1)
-	df2 = read_csv(csv2)
+	df1 = pd.read_csv(csv1, skiprows=1)
+	df2 = pd.read_csv(csv2, skiprows=1)
 
 	# rename the columns in df1 and df2
-	df1.columns = ["Team","Rubbish","Summer_NumGames","S_Gold","S_Silver","S_Bronze","S_Total"]
-	df2.columns = ["Team","Winter_NumGames","W_Gold","W_Silver","W_Bronze","W_Total",
-					"Combined_NumGames","C_Gold","C_Silver","C_Bronze","C_Total"]
+	df1.columns = [
+		'Team',
+		'Rubbish',
+		'Summer_NumGames',
+		'S_Gold',
+		'S_Silver',
+		'S_Bronze',
+		'S_Total'
+	]
+	df2.columns = [
+		'Team',
+		'Winter_NumGames',
+		'W_Gold',
+		'W_Silver',
+		'W_Bronze',
+		'W_Total',
+		'Combined_NumGames',
+		'C_Gold',
+		'C_Silver',
+		'C_Bronze',
+		'C_Total'
+	]
 
 	# Q1
-	print ("\nQuestion 1:\n")
+	print ("\n***********")
+	print ("Question 1:\n")
 	df = question_1(df1, df2)
 
-	# Q2 
-	print ("\nQuestion 2:\n")
+	# Q2
+	print ("\n***********")
+	print ("Question 2:\n")
 	question_2(df)
 
 	# Q3
-	print ("\nQuestion 3:\n")
+	print ("\n***********")
+	print ("Question 3:\n")
 	df = question_3(df)
 
 	# Q4
-	print ("\nQuestion 4:\n")
+	print ("\n***********")
+	print ("Question 4:\n")
 	df = question_4(df)
 
+	# intermediary step to convert medal tally columns from object to int datatype
+	columns_to_convert = [
+		'S_Gold',
+		'S_Silver',
+		'S_Bronze',
+		'S_Total',
+		'W_Gold',
+		'W_Silver',
+		'W_Bronze',
+		'W_Total',
+		'C_Gold',
+		'C_Silver',
+		'C_Bronze',
+		'C_Total'
+	]
+	df = convert_to_int(df, columns_to_convert)
+
 	# Q5
-	print ("\nQuestion 5:\n")
+	print ("\n***********")
+	print ("Question 5:\n")
 	question_5(df)
 
 	# Q6
-	print ("\nQuestion 6:\n")
+	print ("\n***********")
+	print ("Question 6:\n")
 	question_6(df)
 
 	# Q7
-	print ("\nQuestion 7:\n")
+	print ("\n***********")
+	print ("Question 7:\n")
 	df = question_7(df)
 
 	# Q8
-	print ("\nQuestion 8:\n")
+	print ("\n***********")
+	print ("Question 8:\n")
+	print ("See Matlab figure pop-up")
 	question_8(df)
 
 	# Q9
-	print ("\nQuestion 9:\n")
+	print ("\n***********")
+	print ("Question 9:\n")
+	print ("See Matlab figure pop-up")
 	question_9(df)
+
+	# end
+	print ("\n***********")
+	print ("End of Assignment. Thanks!\n")
 
 	
 
